@@ -97,17 +97,34 @@ class DatabaseService {
       if (!Hive.isAdapterRegistered(3)) {
         Hive.registerAdapter(LoanAdapter());
       }
-
-      // Re-open boxes
-      await Hive.openBox<Expense>(_expensesBoxName);
-      await Hive.openBox<UserProfile>(_userProfileBoxName);
-      await Hive.openBox<Loan>(_loansBoxName);
-
-      // Create new default profile
-      final userProfileBox = getUserProfileBox();
-      await userProfileBox.put('user', UserProfile());
     } catch (e) {
       print('Error resetting database: $e');
+      throw e;
+    }
+  }
+
+  /// Deletes all user data and resets the app to initial state
+  Future<bool> deleteAllUserData() async {
+    try {
+      // Get references to boxes
+      final expensesBox = getExpensesBox();
+      final userProfileBox = getUserProfileBox();
+      final loansBox = getLoansBox();
+
+      // Clear all expenses
+      await expensesBox.clear();
+
+      // Clear all loans
+      await loansBox.clear();
+
+      // Reset user profile to default
+      await userProfileBox.put('user', UserProfile());
+
+      print('All user data deleted successfully');
+      return true;
+    } catch (e) {
+      print('Error deleting user data: $e');
+      return false;
     }
   }
 
@@ -119,13 +136,18 @@ class DatabaseService {
     return Hive.box<UserProfile>(_userProfileBoxName);
   }
 
-  Future<void> addExpense(String title, double amount, String category) async {
+  Future<void> addExpense(
+    String title,
+    double amount,
+    String category, {
+    DateTime? date,
+  }) async {
     final expensesBox = getExpensesBox();
     final expense = Expense(
       id: _uuid.v4(),
       title: title,
       amount: amount,
-      date: DateTime.now(),
+      date: date ?? DateTime.now(),
       category: category,
     );
     await expensesBox.add(expense);

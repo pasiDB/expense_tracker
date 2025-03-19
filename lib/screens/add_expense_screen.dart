@@ -18,6 +18,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   String _selectedCategory = 'Food';
   String? _selectedLoanId;
   List<Loan> _activeLoans = [];
+  DateTime _selectedDate = DateTime.now();
 
   final List<String> _categories = [
     'Food',
@@ -27,6 +28,19 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     'Utilities',
     'Health',
     'Education',
+    'Housing',
+    'Personal Care',
+    'Travel',
+    'Electronics',
+    'Clothing',
+    'Gifts',
+    'Investments',
+    'Subscriptions',
+    'Dining Out',
+    'Groceries',
+    'Insurance',
+    'Childcare',
+    'Taxes',
     'Loan Payment',
     'Others',
   ];
@@ -39,6 +53,19 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     'Utilities': Icons.water_drop,
     'Health': Icons.favorite,
     'Education': Icons.school,
+    'Housing': Icons.home,
+    'Personal Care': Icons.spa,
+    'Travel': Icons.flight,
+    'Electronics': Icons.devices,
+    'Clothing': Icons.checkroom,
+    'Gifts': Icons.card_giftcard,
+    'Investments': Icons.trending_up,
+    'Subscriptions': Icons.subscriptions,
+    'Dining Out': Icons.dinner_dining,
+    'Groceries': Icons.shopping_cart,
+    'Insurance': Icons.security,
+    'Childcare': Icons.child_care,
+    'Taxes': Icons.receipt_long,
     'Loan Payment': Icons.account_balance,
     'Others': Icons.attach_money,
   };
@@ -90,6 +117,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           '${_titleController.text} (${selectedLoan.title})',
           amount,
           _selectedCategory,
+          date: _selectedDate,
         );
       } else {
         // Normal expense
@@ -97,26 +125,42 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           _titleController.text,
           amount,
           _selectedCategory,
+          date: _selectedDate,
         );
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 16),
-              Text('Expense added successfully'),
-            ],
+      // Show success message
+      if (_selectedCategory == 'Loan Payment' && _selectedLoanId != null) {
+        final selectedLoan = _activeLoans.firstWhere(
+          (loan) => loan.id == _selectedLoanId,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Payment of \$${amount.toStringAsFixed(2)} applied to ${selectedLoan.title}. Remaining: \$${selectedLoan.remainingAmount - amount > 0 ? (selectedLoan.remainingAmount - amount).toStringAsFixed(2) : "0.00"}',
+            ),
+            backgroundColor: Colors.green,
           ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 16),
+                Text('Expense added successfully'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: EdgeInsets.all(12),
           ),
-          margin: EdgeInsets.all(12),
-        ),
-      );
+        );
+      }
 
       // Call the callback function if provided - ensures proper refresh
       if (widget.onExpenseAdded != null) {
@@ -124,6 +168,34 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       }
 
       Navigator.pop(context, true);
+    }
+  }
+
+  // Date selection method
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Theme.of(context).colorScheme.primary,
+              onPrimary: Colors.white,
+              onSurface: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
     }
   }
 
@@ -215,6 +287,61 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           return null;
                         },
                       ),
+                      const SizedBox(height: 20.0),
+                      // Date picker field
+                      InkWell(
+                        onTap: () => _selectDate(context),
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            labelText: 'Date',
+                            prefixIcon: Icon(
+                              Icons.calendar_today,
+                              color: colorScheme.primary,
+                            ),
+                            suffixIcon: Icon(
+                              Icons.arrow_drop_down,
+                              color: colorScheme.primary,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: colorScheme.onSurface,
+                                ),
+                              ),
+                              _selectedDate.day == DateTime.now().day &&
+                                      _selectedDate.month ==
+                                          DateTime.now().month &&
+                                      _selectedDate.year == DateTime.now().year
+                                  ? Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primaryContainer,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Today',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: colorScheme.onPrimaryContainer,
+                                      ),
+                                    ),
+                                  )
+                                  : SizedBox(),
+                            ],
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 24.0),
                       Text(
                         'Category',
@@ -226,70 +353,83 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                         ),
                       ),
                       const SizedBox(height: 16.0),
-                      Wrap(
-                        spacing: 12.0,
-                        runSpacing: 12.0,
-                        children:
-                            _categories.map((category) {
-                              final isSelected = _selectedCategory == category;
-                              return InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedCategory = category;
+                      Container(
+                        height: 250, // Increased height for the grid
+                        child: GridView.builder(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount:
+                                    2, // Reduced from 3 to 2 columns
+                                childAspectRatio:
+                                    3.0, // More space for each item
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                              ),
+                          itemCount: _categories.length,
+                          itemBuilder: (context, index) {
+                            final category = _categories[index];
+                            final isSelected = _selectedCategory == category;
+                            return InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _selectedCategory = category;
 
-                                    // Reset selected loan when changing category
-                                    if (category != 'Loan Payment') {
-                                      _selectedLoanId = null;
-                                    } else if (_activeLoans.isNotEmpty) {
-                                      // Auto-select first loan if available
-                                      _selectedLoanId = _activeLoans.first.id;
-                                      _titleController.text =
-                                          'Payment for ${_activeLoans.first.title}';
-                                      _amountController.text =
-                                          _activeLoans.first.monthlyPayment
-                                              .toString();
-                                    }
-                                  });
-                                },
-                                borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 16.0,
-                                    vertical: 12.0,
-                                  ),
-                                  decoration: BoxDecoration(
+                                  // Reset selected loan when changing category
+                                  if (category != 'Loan Payment') {
+                                    _selectedLoanId = null;
+                                  } else if (_activeLoans.isNotEmpty) {
+                                    // Auto-select first loan if available
+                                    _selectedLoanId = _activeLoans.first.id;
+                                    _titleController.text =
+                                        'Payment for ${_activeLoans.first.title}';
+                                    _amountController.text =
+                                        _activeLoans.first.monthlyPayment
+                                            .toString();
+                                  }
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8.0,
+                                  vertical: 8.0,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      isSelected
+                                          ? colorScheme.primary
+                                          : colorScheme.primary.withOpacity(
+                                            0.1,
+                                          ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
                                     color:
                                         isSelected
-                                            ? colorScheme.primary
+                                            ? Colors.transparent
                                             : colorScheme.primary.withOpacity(
-                                              0.1,
+                                              0.5,
                                             ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      _categoryIcons[category],
+                                      size: 16,
                                       color:
                                           isSelected
-                                              ? Colors.transparent
-                                              : colorScheme.primary.withOpacity(
-                                                0.5,
-                                              ),
-                                      width: 1,
+                                              ? Colors.white
+                                              : colorScheme.primary,
                                     ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        _categoryIcons[category],
-                                        size: 20,
-                                        color:
-                                            isSelected
-                                                ? Colors.white
-                                                : colorScheme.primary,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
                                         category,
                                         style: TextStyle(
+                                          fontSize: 12,
                                           color:
                                               isSelected
                                                   ? Colors.white
@@ -299,12 +439,16 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                                   ? FontWeight.bold
                                                   : FontWeight.normal,
                                         ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              );
-                            }).toList(),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                       // Show loan selection when Loan Payment is selected
                       if (_selectedCategory == 'Loan Payment') ...[
