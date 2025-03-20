@@ -1,15 +1,39 @@
+import 'package:firebase_in_app_messaging/firebase_in_app_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:expense_tracker/screens/home_screen.dart';
 import 'package:expense_tracker/database/database_service.dart';
-import 'package:expense_tracker/models/expense.dart';
-import 'package:expense_tracker/models/user_profile.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  await Firebase.initializeApp();
+
+  WidgetsFlutterBinding.ensureInitialized();
+    await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // Request notification permissions
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+  NotificationSettings settings = await messaging.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+  
+  // Initialize Firebase In-App Messaging
+  FirebaseInAppMessaging fiam = FirebaseInAppMessaging.instance;
+  
+  // Handle background messages
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // Close any open boxes first
   await Hive.close();
@@ -36,6 +60,12 @@ void main() async {
   final databaseService = DatabaseService();
   await databaseService.initDatabase();
   runApp(const ExpenseTrackerApp());
+}
+
+// Handle background messages
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  print('Handling a background message: ${message.messageId}');
 }
 
 class ExpenseTrackerApp extends StatelessWidget {
